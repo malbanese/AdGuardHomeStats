@@ -12,13 +12,14 @@ import (
 
 const (
 	DefaultPort = 3001
+	DefaultUrl  = "http://127.0.0.1"
 )
 
 func main() {
 	// Setup command line flags
-	url := flag.String("url", "", "Base URL to request (required)")
 	username := flag.String("u", "", "Username for authentication (required)")
 	password := flag.String("p", "", "Password for authentication (required)")
+	url := flag.String("url", DefaultUrl, "Base URL to request")
 	port := flag.String("port", strconv.Itoa(DefaultPort), "Port the proxy will be started on")
 
 	// Parse command line flags
@@ -31,6 +32,6 @@ func main() {
 	}
 
 	// Setup the routes and start listening
-	proxy.SetupHttpRoutes(*url, *username, *password)
+	proxy.SetupHttpRoutes(&http.Client{}, *url, *username, *password)
 	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }
