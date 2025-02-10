@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/malbanese/adguardhomestats/internal/proxy"
+	"github.com/malbanese/adguardhomestats/pkg/client"
 )
 
 const (
@@ -32,6 +33,7 @@ func main() {
 	}
 
 	// Setup the routes and start listening
-	proxy.SetupHttpRoutes(&http.Client{}, *url, *username, *password)
+	aghClient := client.NewClient(&http.Client{}, *url, *username, *password)
+	proxy.SetupHttpRoutes(aghClient)
 	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }

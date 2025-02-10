@@ -4,38 +4,26 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 
-	statClient "github.com/malbanese/adguardhomestats/pkg/client"
+	"github.com/malbanese/adguardhomestats/pkg/client"
 )
 
-const (
-	statsEndpointPath = "/control/stats"
-)
-
-func SetupHttpRoutes(client *http.Client, baseProxyUrl string, username string, password string) {
-	statsEndpoint := statClient.AghStatsEndpointInfo{
-		Username: username,
-		Password: password,
-		Url:      formatStatsUrl(baseProxyUrl),
-	}
-
-	http.HandleFunc(statsEndpointPath, func(w http.ResponseWriter, r *http.Request) {
-		statsHttpHandler(client, &statsEndpoint, w, r)
+func SetupHttpRoutes(aghClient client.AghClient) {
+	http.HandleFunc(client.EndpointStatsPath, func(w http.ResponseWriter, r *http.Request) {
+		statsHttpHandler(aghClient, w, r)
 	})
 }
 
 func statsHttpHandler(
-	client *http.Client,
-	endpoint *statClient.AghStatsEndpointInfo,
+	aghClient client.AghClient,
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
 	log.Printf("Accepting request from %s", r.RemoteAddr)
 
-	var response statClient.AghStatsResponse
+	var response client.AghStatsResponse
+	err := aghClient.FetchStats(&response)
 
-	err := statClient.FetchStats(client, &response, endpoint)
 	if err != nil {
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 		return
@@ -50,13 +38,4 @@ func statsHttpHandler(
 	if err != nil {
 		log.Println("Error while writing the stats response: %w", err)
 	}
-}
-
-func formatStatsUrl(url string) string {
-	if !strings.HasSuffix(url, statsEndpointPath) {
-		url = strings.TrimSuffix(url, "/")
-		url += statsEndpointPath
-	}
-
-	return url
 }

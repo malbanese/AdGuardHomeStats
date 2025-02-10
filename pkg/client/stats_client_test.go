@@ -53,14 +53,8 @@ func TestFetchStatsSuccess(t *testing.T) {
 		server := createSuccessServer(&expected)
 		defer server.Close()
 
-		endpoint := AghStatsEndpointInfo{
-			Username: StubUsername,
-			Password: StubPassword,
-			Url:      server.URL,
-		}
-
 		var response AghStatsResponse
-		err := FetchStats(&client, &response, &endpoint)
+		err := FetchStats(&response, &client, server.URL, StubUsername, StubPassword)
 
 		if err != nil {
 			t.Errorf("Expected success, got error instead %v", err)
@@ -74,51 +68,55 @@ func TestFetchStatsErrors(t *testing.T) {
 	testCases := []struct {
 		name        string
 		errorPrefix string
-		endpoint    *AghStatsEndpointInfo
+		username    string
+		password    string
+		url         string
 		server      *httptest.Server
 	}{
 		{
 			name:        "Error making request object",
 			errorPrefix: "error creating request",
-			endpoint: &AghStatsEndpointInfo{
-				Username: StubUsername,
-				Password: StubPassword,
-				Url:      "http://user:abcd{DEf1=ghi@example.com:5432/db",
-			},
-			server: createSuccessServer(nil),
+			username:    StubUsername,
+			password:    StubPassword,
+			url:         "http://user:abcd{DEf1=ghi@example.com:5432/db",
+			server:      createSuccessServer(nil),
 		},
 		{
 			name:        "Error executing request",
 			errorPrefix: "error making request",
-			endpoint: &AghStatsEndpointInfo{
-				Username: StubUsername,
-				Password: StubPassword,
-				Url:      "slash_at_end_is_invalid/",
-			},
-			server: createSuccessServer(nil),
+			username:    StubUsername,
+			password:    StubPassword,
+			url:         "slash_at_end_is_invalid/",
+			server:      createSuccessServer(nil),
 		},
 		{
 			name:        "Downstream responds with 400",
+			errorPrefix: "HTTP Error",
+			username:    StubUsername,
+			password:    StubPassword,
+			url:         "",
+			server:      createThrowingServer(400),
+		},
+		{
+			name:        "Downstream gives invalid json",
 			errorPrefix: "error parsing body json",
-			endpoint: &AghStatsEndpointInfo{
-				Username: StubUsername,
-				Password: StubPassword,
-				Url:      "",
-			},
-			server: createSuccessServerWithString("{ invalid json"),
+			username:    StubUsername,
+			password:    StubPassword,
+			url:         "",
+			server:      createSuccessServerWithString("{ invalid json"),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.endpoint.Url == "" {
-				tc.endpoint.Url = tc.server.URL
+			if tc.url == "" {
+				tc.url = tc.server.URL
 			}
 
 			defer tc.server.Close()
 			var response AghStatsResponse
 			client := http.Client{}
-			err := FetchStats(&client, &response, tc.endpoint)
+			err := FetchStats(&response, &client, tc.url, tc.username, tc.password)
 			if err == nil {
 				t.Errorf("Expected throwing case for `%s`", tc.name)
 			} else if !strings.HasPrefix(err.Error(), tc.errorPrefix) {

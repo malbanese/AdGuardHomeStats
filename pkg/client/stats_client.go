@@ -14,21 +14,15 @@ type AghStatsResponse struct {
 	AvgProcessingTime   float64 `json:"avg_processing_time"`
 }
 
-type AghStatsEndpointInfo struct {
-	Username string
-	Password string
-	Url      string
-}
-
-func FetchStats(client *http.Client, response *AghStatsResponse, endpoint *AghStatsEndpointInfo) error {
+func FetchStats(response *AghStatsResponse, client *http.Client, url string, username string, password string) error {
 	// Setup initial request
-	req, err := http.NewRequest("GET", endpoint.Url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	// AdGuard Home uses basic authentication
-	req.SetBasicAuth(endpoint.Username, endpoint.Password)
+	req.SetBasicAuth(username, password)
 
 	// Execute the request
 	resp, err := client.Do(req)
