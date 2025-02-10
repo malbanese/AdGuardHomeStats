@@ -8,8 +8,31 @@ import (
 	"github.com/malbanese/adguardhomestats/pkg/client"
 )
 
-func SetupHttpRoutes(aghClient client.AghClient) {
-	http.HandleFunc(client.EndpointStatsPath, func(w http.ResponseWriter, r *http.Request) {
+type ProxyServer struct {
+	server *http.Server
+}
+
+func (p *ProxyServer) Start() error {
+	return p.server.ListenAndServe()
+}
+
+func NewProxyServer(
+	aghClient client.AghClient,
+	addr string,
+) *ProxyServer {
+	mux := http.NewServeMux()
+	bindRoutes(mux, aghClient)
+
+	return &ProxyServer{
+		server: &http.Server{
+			Addr:    addr,
+			Handler: mux,
+		},
+	}
+}
+
+func bindRoutes(mux *http.ServeMux, aghClient client.AghClient) {
+	mux.HandleFunc(client.EndpointStatsPath, func(w http.ResponseWriter, r *http.Request) {
 		var response client.StatsResponse
 		proxy(w, r, func() (any, error) {
 			return &response, aghClient.FetchStats(&response)

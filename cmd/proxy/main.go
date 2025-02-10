@@ -13,6 +13,7 @@ import (
 const (
 	DefaultPort = 3001
 	DefaultUrl  = "http://127.0.0.1"
+	DefaultHost = "127.0.0.1"
 )
 
 func main() {
@@ -20,7 +21,8 @@ func main() {
 	username := flag.String("u", "", "Username for authentication (required)")
 	password := flag.String("p", "", "Password for authentication (required)")
 	url := flag.String("url", DefaultUrl, "Base URL to request")
-	port := flag.String("port", strconv.Itoa(DefaultPort), "Port the proxy will be started on")
+	host := flag.String("host", DefaultHost, "Host the proxy will bind with")
+	port := flag.String("port", strconv.Itoa(DefaultPort), "Port the proxy will bind with")
 
 	// Parse command line flags
 	flag.Parse()
@@ -29,9 +31,9 @@ func main() {
 		// Invalid command line args
 		flag.Usage()
 	} else {
-		// Setup the routes and start listening
-		aghClient := client.NewClient(&http.Client{}, *url, *username, *password)
-		proxy.SetupHttpRoutes(aghClient)
-		log.Fatal(http.ListenAndServe(":"+*port, nil))
+		httpClient := http.Client{}
+		aghClient := client.NewClient(&httpClient, *url, *username, *password)
+		server := proxy.NewProxyServer(aghClient, *host+":"+*port)
+		log.Fatal(server.Start())
 	}
 }
