@@ -10,20 +10,21 @@ import (
 
 func SetupHttpRoutes(aghClient client.AghClient) {
 	http.HandleFunc(client.EndpointStatsPath, func(w http.ResponseWriter, r *http.Request) {
-		statsHttpHandler(aghClient, w, r)
+		var response client.StatsResponse
+		proxy(w, r, func() (any, error) {
+			return &response, aghClient.FetchStats(&response)
+		})
 	})
 }
 
-func statsHttpHandler(
-	aghClient client.AghClient,
+func proxy(
 	w http.ResponseWriter,
 	r *http.Request,
+	method func() (any, error),
 ) {
-	log.Printf("Accepting request from %s", r.RemoteAddr)
+	log.Printf("Accepting request [%s] from [%s]", r.URL, r.RemoteAddr)
 
-	var response client.AghStatsResponse
-	err := aghClient.FetchStats(&response)
-
+	response, err := method()
 	if err != nil {
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 		return

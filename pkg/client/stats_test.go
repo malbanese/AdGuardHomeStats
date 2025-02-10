@@ -9,18 +9,13 @@ import (
 	"testing"
 )
 
-const (
-	StubUsername = "User"
-	StubPassword = "Password"
-)
-
 func createThrowingServer(errorCode int) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(errorCode)
 	}))
 }
 
-func createSuccessServer(response *AghStatsResponse) *httptest.Server {
+func createSuccessServer(response *StatsResponse) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		jsonBytes, err := json.Marshal(response)
 		if err != nil {
@@ -43,7 +38,7 @@ func TestFetchStatsSuccess(t *testing.T) {
 	t.Run("Fetch successful response", func(t *testing.T) {
 		client := http.Client{}
 
-		expected := AghStatsResponse{
+		expected := StatsResponse{
 			TimeUnits:           "hours",
 			NumDnsQueries:       1000,
 			NumBlockedFiltering: 2000,
@@ -53,8 +48,9 @@ func TestFetchStatsSuccess(t *testing.T) {
 		server := createSuccessServer(&expected)
 		defer server.Close()
 
-		var response AghStatsResponse
-		err := FetchStats(&response, &client, server.URL, StubUsername, StubPassword)
+		var response StatsResponse
+		aghClient := NewClient(&client, server.URL, "username", "password")
+		err := aghClient.FetchStats(&response)
 
 		if err != nil {
 			t.Errorf("Expected success, got error instead %v", err)
@@ -65,6 +61,9 @@ func TestFetchStatsSuccess(t *testing.T) {
 }
 
 func TestFetchStatsErrors(t *testing.T) {
+	username := "username"
+	password := "password"
+
 	testCases := []struct {
 		name        string
 		errorPrefix string
@@ -76,32 +75,32 @@ func TestFetchStatsErrors(t *testing.T) {
 		{
 			name:        "Error making request object",
 			errorPrefix: "error creating request",
-			username:    StubUsername,
-			password:    StubPassword,
+			username:    username,
+			password:    password,
 			url:         "http://user:abcd{DEf1=ghi@example.com:5432/db",
 			server:      createSuccessServer(nil),
 		},
 		{
 			name:        "Error executing request",
 			errorPrefix: "error making request",
-			username:    StubUsername,
-			password:    StubPassword,
+			username:    username,
+			password:    password,
 			url:         "slash_at_end_is_invalid/",
 			server:      createSuccessServer(nil),
 		},
 		{
 			name:        "Downstream responds with 400",
 			errorPrefix: "HTTP Error",
-			username:    StubUsername,
-			password:    StubPassword,
+			username:    username,
+			password:    password,
 			url:         "",
 			server:      createThrowingServer(400),
 		},
 		{
 			name:        "Downstream gives invalid json",
 			errorPrefix: "error parsing body json",
-			username:    StubUsername,
-			password:    StubPassword,
+			username:    username,
+			password:    password,
 			url:         "",
 			server:      createSuccessServerWithString("{ invalid json"),
 		},
@@ -114,9 +113,10 @@ func TestFetchStatsErrors(t *testing.T) {
 			}
 
 			defer tc.server.Close()
-			var response AghStatsResponse
+			var response StatsResponse
 			client := http.Client{}
-			err := FetchStats(&response, &client, tc.url, tc.username, tc.password)
+			aghClient := NewClient(&client, tc.url, username, password)
+			err := aghClient.FetchStats(&response)
 			if err == nil {
 				t.Errorf("Expected throwing case for `%s`", tc.name)
 			} else if !strings.HasPrefix(err.Error(), tc.errorPrefix) {

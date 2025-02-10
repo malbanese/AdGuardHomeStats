@@ -7,14 +7,14 @@ import (
 	"net/http"
 )
 
-type AghStatsResponse struct {
+type StatsResponse struct {
 	TimeUnits           string  `json:"time_units"`
 	NumDnsQueries       int     `json:"num_dns_queries"`
 	NumBlockedFiltering int     `json:"num_blocked_filtering"`
 	AvgProcessingTime   float64 `json:"avg_processing_time"`
 }
 
-func FetchStats(response *AghStatsResponse, client *http.Client, url string, username string, password string) error {
+func fetchStats(response *StatsResponse, client *http.Client, url string, username string, password string) error {
 	// Setup initial request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

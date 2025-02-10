@@ -10,7 +10,7 @@ const (
 )
 
 type AghClient interface {
-	FetchStats(response *AghStatsResponse) error
+	FetchStats(response *StatsResponse) error
 }
 
 type aghClientImpl struct {
@@ -20,24 +20,16 @@ type aghClientImpl struct {
 	statsUrl string
 }
 
-func (c *aghClientImpl) FetchStats(response *AghStatsResponse) error {
-	return FetchStats(response, c.client, c.statsUrl, c.username, c.password)
+func (c *aghClientImpl) FetchStats(response *StatsResponse) error {
+	return fetchStats(response, c.client, c.statsUrl, c.username, c.password)
 }
 
 func NewClient(client *http.Client, baseProxyUrl string, username string, password string) AghClient {
+	baseProxyUrl = strings.TrimSuffix(baseProxyUrl, "/")
 	return &aghClientImpl{
 		client:   client,
-		statsUrl: formatUrlForPath(baseProxyUrl, EndpointStatsPath),
+		statsUrl: baseProxyUrl + EndpointStatsPath,
 		username: username,
 		password: password,
 	}
-}
-
-func formatUrlForPath(url string, path string) string {
-	if !strings.HasSuffix(url, path) {
-		url = strings.TrimSuffix(url, "/")
-		url += path
-	}
-
-	return url
 }

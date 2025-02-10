@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/malbanese/adguardhomestats/internal/proxy"
@@ -26,14 +25,13 @@ func main() {
 	// Parse command line flags
 	flag.Parse()
 
-	// Validate command line flags
 	if *url == "" || *username == "" || *password == "" {
+		// Invalid command line args
 		flag.Usage()
-		os.Exit(1)
+	} else {
+		// Setup the routes and start listening
+		aghClient := client.NewClient(&http.Client{}, *url, *username, *password)
+		proxy.SetupHttpRoutes(aghClient)
+		log.Fatal(http.ListenAndServe(":"+*port, nil))
 	}
-
-	// Setup the routes and start listening
-	aghClient := client.NewClient(&http.Client{}, *url, *username, *password)
-	proxy.SetupHttpRoutes(aghClient)
-	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }
