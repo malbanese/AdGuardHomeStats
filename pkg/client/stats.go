@@ -14,18 +14,24 @@ type StatsResponse struct {
 	AvgProcessingTime   float64 `json:"avg_processing_time"`
 }
 
-func fetchStats(response *StatsResponse, client *http.Client, url string, username string, password string) error {
+type StatsClient struct {
+	Client *http.Client
+	Auth   AuthType
+	Url    string
+}
+
+func (c *StatsClient) FetchStats(response *StatsResponse) error {
 	// Setup initial request
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", c.Url, nil)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	// AdGuard Home uses basic authentication
-	req.SetBasicAuth(username, password)
+	// Add authentication to our request
+	c.Auth.Authenticate(req)
 
 	// Execute the request
-	resp, err := client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error making request: %w", err)
 	}

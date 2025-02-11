@@ -36,7 +36,6 @@ func createSuccessServerWithString(response string) *httptest.Server {
 
 func TestFetchStatsSuccess(t *testing.T) {
 	t.Run("Fetch successful response", func(t *testing.T) {
-		client := http.Client{}
 
 		expected := StatsResponse{
 			TimeUnits:           "hours",
@@ -48,9 +47,17 @@ func TestFetchStatsSuccess(t *testing.T) {
 		server := createSuccessServer(&expected)
 		defer server.Close()
 
+		client := StatsClient{
+			Client: &http.Client{},
+			Url:    server.URL,
+			Auth: &BasicAuthType{
+				Username: "user",
+				Password: "password",
+			},
+		}
+
 		var response StatsResponse
-		aghClient := NewClient(&client, server.URL, "username", "password")
-		err := aghClient.FetchStats(&response)
+		err := client.FetchStats(&response)
 
 		if err != nil {
 			t.Errorf("Expected success, got error instead %v", err)
@@ -113,10 +120,18 @@ func TestFetchStatsErrors(t *testing.T) {
 			}
 
 			defer tc.server.Close()
+			client := StatsClient{
+				Client: &http.Client{},
+				Url:    tc.url,
+				Auth: &BasicAuthType{
+					Username: "user",
+					Password: "password",
+				},
+			}
+
 			var response StatsResponse
-			client := http.Client{}
-			aghClient := NewClient(&client, tc.url, username, password)
-			err := aghClient.FetchStats(&response)
+			err := client.FetchStats(&response)
+
 			if err == nil {
 				t.Errorf("Expected throwing case for `%s`", tc.name)
 			} else if !strings.HasPrefix(err.Error(), tc.errorPrefix) {

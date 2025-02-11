@@ -2,52 +2,60 @@ package proxy
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/malbanese/adguardhomestats/pkg/client"
 )
 
+// Base server definition
 type ProxyServer struct {
-	server *http.Server
+	Routes  ProxyRoutes
+	Clients ProxyClients
 }
 
-func (p *ProxyServer) Start() error {
-	return p.server.ListenAndServe()
+// Routes the proxy server will listen on
+type ProxyRoutes struct {
+	Stats string
 }
 
-func NewProxyServer(
-	aghClient client.AghClient,
-	addr string,
-) *ProxyServer {
+// Clients the proxy server will use to forward downstream requests
+type ProxyClients struct {
+	Stats StatsClient
+}
+
+// Client to be used for fetching AdGuard Home statistics
+type StatsClient interface {
+	FetchStats(response *client.StatsResponse) error
+}
+
+// Returns an HTTP server which will operate on the given host and port.
+// All relevant proxy routes have been mounted.
+func (p *ProxyServer) NewHttpServer(host string, port uint) *http.Server {
 	mux := http.NewServeMux()
-	bindRoutes(mux, aghClient)
+	mux.HandleFunc(p.Routes.Stats, p.onStatsRequest)
 
-	return &ProxyServer{
-		server: &http.Server{
-			Addr:    addr,
-			Handler: mux,
-		},
+	server := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", host, port),
+		Handler: mux,
 	}
+
+	return server
 }
 
-func bindRoutes(mux *http.ServeMux, aghClient client.AghClient) {
-	mux.HandleFunc(client.EndpointStatsPath, func(w http.ResponseWriter, r *http.Request) {
-		var response client.StatsResponse
-		proxy(w, r, func() (any, error) {
-			return &response, aghClient.FetchStats(&response)
-		})
-	})
+func (p *ProxyServer) onStatsRequest(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Accepting stats request [%s] from [%s]", r.URL, r.RemoteAddr)
+	var response client.StatsResponse
+	err := p.Clients.Stats.FetchStats(&response)
+	writeProxyResponse(w, response, err)
 }
 
-func proxy(
+func writeProxyResponse(
 	w http.ResponseWriter,
-	r *http.Request,
-	method func() (any, error),
+	response any,
+	err error,
 ) {
-	log.Printf("Accepting request [%s] from [%s]", r.URL, r.RemoteAddr)
-
-	response, err := method()
 	if err != nil {
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 		return
@@ -56,10 +64,12 @@ func proxy(
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusBadRequest)
+		return
 	}
 
 	_, err = w.Write(jsonBytes)
 	if err != nil {
 		log.Println("Error while writing the stats response: %w", err)
+		return
 	}
 }
