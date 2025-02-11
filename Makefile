@@ -4,7 +4,7 @@ export GO111MODULE=on
 ## ENVIRONMENT ##
 #################
 
-APP=AdGuardHome
+APP=adguardhomestats
 OUT_ROOT="./out"
 BIN_ROOT="${OUT_ROOT}/bin"
 REPORT_ROOT="${OUT_ROOT}/report"
@@ -57,13 +57,13 @@ test-coverage:
 ##############
 
 build-linux:
-	GOOS=linux GOARCH=amd64 go build -o "${BIN_ROOT}/adguardhome-linux-amd64" ./cmd/proxy/main.go
+	GOOS=linux GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-linux-amd64" ./cmd/proxy/main.go
 
 build-darwin:
-	GOOS=darwin GOARCH=amd64 go build -o "${BIN_ROOT}/adguardhome-darwin-amd64" ./cmd/proxy/main.go
+	GOOS=darwin GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-darwin-amd64" ./cmd/proxy/main.go
 
 build-windows:
-	GOOS=windows GOARCH=amd64 go build -o "${BIN_ROOT}/adguardhome-windows-amd64.exe" ./cmd/proxy/main.go
+	GOOS=windows GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-windows-amd64.exe" ./cmd/proxy/main.go
 
 build-all: build-linux build-darwin build-windows
 
