@@ -15,7 +15,7 @@ SHELL := /bin/bash
 #############
 
 # Runs all quality checks
-check: check-format check-lint check-vet
+check-all: check-format check-lint check-vet
 
 # Uses the go formatter
 check-format:
@@ -48,7 +48,7 @@ test: chore-deps
 	go test -v -timeout 10m ./... -coverprofile="${REPORT_ROOT}/coverage.out" -json > "${REPORT_ROOT}/report.json"
 
 # Run tests with coverage
-coverage: 
+test-coverage: 
 	make test
 	go tool cover -html="${REPORT_ROOT}/coverage.out"
 
