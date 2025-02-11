@@ -20,7 +20,7 @@ jobs:
 
     - name: Set up Lint
       uses: golangci/golangci-lint-action@v6.3.2
-      
+
     - name: Lint
       run: make check-all
 
@@ -29,3 +29,11 @@ jobs:
 
     - name: Build
       run: make build-all
+
+    - name: 'Upload Build Artifacts'
+      uses: actions/upload-artifact@v4
+      with:
+        name: main-artifact
+        path: |
+          out//bin/
+          out/report/
