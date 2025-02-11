@@ -10,12 +10,12 @@ import (
 )
 
 // HTTP routes the proxy server will bind to
-type ProxyRoutes struct {
+type Routes struct {
 	Stats string
 }
 
 // Base server definition
-type ProxyServer struct {
+type Server struct {
 	Stats StatsClient
 }
 
@@ -26,7 +26,7 @@ type StatsClient interface {
 
 // Returns an HTTP server which will operate on the given host and port.
 // All relevant proxy routes have been mounted.
-func (p *ProxyServer) NewHttpServer(routes ProxyRoutes, host string, port uint) *http.Server {
+func (p *Server) NewHTTPServer(routes Routes, host string, port uint) *http.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc(routes.Stats, p.onStatsRequest)
 
@@ -38,7 +38,7 @@ func (p *ProxyServer) NewHttpServer(routes ProxyRoutes, host string, port uint) 
 	return server
 }
 
-func (p *ProxyServer) onStatsRequest(w http.ResponseWriter, r *http.Request) {
+func (p *Server) onStatsRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Accepting stats request [%s] from [%s]", r.URL, r.RemoteAddr)
 	var response client.StatsResponse
 	err := p.Stats.FetchStats(&response)

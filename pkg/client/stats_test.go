@@ -10,27 +10,27 @@ import (
 )
 
 func createThrowingServer(errorCode int) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(errorCode)
 	}))
 }
 
 func createSuccessServer(response *StatsResponse) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		jsonBytes, err := json.Marshal(response)
 		if err != nil {
 			http.Error(w, "", http.StatusInternalServerError)
 		} else {
 			w.WriteHeader(http.StatusOK)
-			w.Write(jsonBytes)
+			_, _ = w.Write(jsonBytes)
 		}
 	}))
 }
 
 func createSuccessServerWithString(response string) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		io.WriteString(w, response)
+		_, _ = io.WriteString(w, response)
 	}))
 }
 
@@ -39,7 +39,7 @@ func TestFetchStatsSuccess(t *testing.T) {
 
 		expected := StatsResponse{
 			TimeUnits:           "hours",
-			NumDnsQueries:       1000,
+			NumDNSQueries:       1000,
 			NumBlockedFiltering: 2000,
 			AvgProcessingTime:   0.123,
 		}
@@ -49,7 +49,7 @@ func TestFetchStatsSuccess(t *testing.T) {
 
 		client := StatsClient{
 			Client: &http.Client{},
-			Url:    server.URL,
+			URL:    server.URL,
 			Auth: &BasicAuthType{
 				Username: "user",
 				Password: "password",
@@ -122,7 +122,7 @@ func TestFetchStatsErrors(t *testing.T) {
 			defer tc.server.Close()
 			client := StatsClient{
 				Client: &http.Client{},
-				Url:    tc.url,
+				URL:    tc.url,
 				Auth: &BasicAuthType{
 					Username: "user",
 					Password: "password",

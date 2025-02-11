@@ -9,7 +9,7 @@ import (
 
 type StatsResponse struct {
 	TimeUnits           string  `json:"time_units"`
-	NumDnsQueries       int     `json:"num_dns_queries"`
+	NumDNSQueries       int     `json:"num_dns_queries"`
 	NumBlockedFiltering int     `json:"num_blocked_filtering"`
 	AvgProcessingTime   float64 `json:"avg_processing_time"`
 }
@@ -17,12 +17,12 @@ type StatsResponse struct {
 type StatsClient struct {
 	Client *http.Client
 	Auth   AuthType
-	Url    string
+	URL    string
 }
 
 func (c *StatsClient) FetchStats(response *StatsResponse) error {
 	// Setup initial request
-	req, err := http.NewRequest("GET", c.Url, nil)
+	req, err := http.NewRequest("GET", c.URL, nil)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

@@ -13,12 +13,12 @@ import (
 // Default values to be used in arguments
 const (
 	DefaultPort uint   = 3001
-	DefaultUrl  string = "http://127.0.0.1"
+	DefaultURL  string = "http://127.0.0.1"
 	DefaultHost string = "127.0.0.1"
 )
 
 // Proxy routes
-var routes = proxy.ProxyRoutes{
+var routes = proxy.Routes{
 	Stats: "/control/stats",
 }
 
@@ -26,13 +26,13 @@ var routes = proxy.ProxyRoutes{
 type ProxyArgs struct {
 	Username *string
 	Password *string
-	Url      *string
+	URL      *string
 	Host     *string
 	Port     *uint
 }
 
 func (a *ProxyArgs) IsValid() bool {
-	return *a.Username != "" && *a.Password != "" && *a.Url != "" && *a.Host != ""
+	return *a.Username != "" && *a.Password != "" && *a.URL != "" && *a.Host != ""
 }
 
 // Main entry point
@@ -40,7 +40,7 @@ func main() {
 	args := ProxyArgs{
 		Username: flag.String("u", "", "Username for authentication (required)"),
 		Password: flag.String("p", "", "Password for authentication (required)"),
-		Url:      flag.String("url", DefaultUrl, "Base URL to request"),
+		URL:      flag.String("url", DefaultURL, "Base URL to request"),
 		Host:     flag.String("host", DefaultHost, "Host the proxy will bind with"),
 		Port:     flag.Uint("port", DefaultPort, "Port the proxy will bind with"),
 	}
@@ -62,16 +62,16 @@ func startServer(args *ProxyArgs) {
 		Password: *args.Password,
 	}
 
-	url := strings.TrimSuffix(*args.Url, "/")
+	url := strings.TrimSuffix(*args.URL, "/")
 
-	server := proxy.ProxyServer{
+	server := proxy.Server{
 		Stats: &client.StatsClient{
-			Url:    url + routes.Stats,
+			URL:    url + routes.Stats,
 			Auth:   &authType,
 			Client: &httpClient,
 		},
 	}
 
-	httpServer := server.NewHttpServer(routes, *args.Host, *args.Port)
+	httpServer := server.NewHTTPServer(routes, *args.Host, *args.Port)
 	log.Fatal(httpServer.ListenAndServe())
 }
