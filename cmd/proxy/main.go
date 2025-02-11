@@ -10,14 +10,17 @@ import (
 	"github.com/malbanese/adguardhomestats/pkg/client"
 )
 
-// Default values to be used for certain arguments
+// Default values to be used in arguments
 const (
 	DefaultPort uint   = 3001
 	DefaultUrl  string = "http://127.0.0.1"
 	DefaultHost string = "127.0.0.1"
-
-	EndpointStats string = "/control/stats"
 )
+
+// Proxy routes
+var routes = proxy.ProxyRoutes{
+	Stats: "/control/stats",
+}
 
 // Argument convenience bundling
 type ProxyArgs struct {
@@ -62,18 +65,13 @@ func startServer(args *ProxyArgs) {
 	url := strings.TrimSuffix(*args.Url, "/")
 
 	server := proxy.ProxyServer{
-		Routes: proxy.ProxyRoutes{
-			Stats: EndpointStats,
-		},
-		Clients: proxy.ProxyClients{
-			Stats: &client.StatsClient{
-				Url:    url + EndpointStats,
-				Auth:   &authType,
-				Client: &httpClient,
-			},
+		Stats: &client.StatsClient{
+			Url:    url + routes.Stats,
+			Auth:   &authType,
+			Client: &httpClient,
 		},
 	}
 
-	httpServer := server.NewHttpServer(*args.Host, *args.Port)
+	httpServer := server.NewHttpServer(routes, *args.Host, *args.Port)
 	log.Fatal(httpServer.ListenAndServe())
 }

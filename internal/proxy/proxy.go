@@ -9,19 +9,13 @@ import (
 	"github.com/malbanese/adguardhomestats/pkg/client"
 )
 
-// Base server definition
-type ProxyServer struct {
-	Routes  ProxyRoutes
-	Clients ProxyClients
-}
-
-// Routes the proxy server will listen on
+// HTTP routes the proxy server will bind to
 type ProxyRoutes struct {
 	Stats string
 }
 
-// Clients the proxy server will use to forward downstream requests
-type ProxyClients struct {
+// Base server definition
+type ProxyServer struct {
 	Stats StatsClient
 }
 
@@ -32,9 +26,9 @@ type StatsClient interface {
 
 // Returns an HTTP server which will operate on the given host and port.
 // All relevant proxy routes have been mounted.
-func (p *ProxyServer) NewHttpServer(host string, port uint) *http.Server {
+func (p *ProxyServer) NewHttpServer(routes ProxyRoutes, host string, port uint) *http.Server {
 	mux := http.NewServeMux()
-	mux.HandleFunc(p.Routes.Stats, p.onStatsRequest)
+	mux.HandleFunc(routes.Stats, p.onStatsRequest)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", host, port),
@@ -47,7 +41,7 @@ func (p *ProxyServer) NewHttpServer(host string, port uint) *http.Server {
 func (p *ProxyServer) onStatsRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Accepting stats request [%s] from [%s]", r.URL, r.RemoteAddr)
 	var response client.StatsResponse
-	err := p.Clients.Stats.FetchStats(&response)
+	err := p.Stats.FetchStats(&response)
 	writeProxyResponse(w, response, err)
 }
 
