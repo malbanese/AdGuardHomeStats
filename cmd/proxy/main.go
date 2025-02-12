@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/malbanese/adguardhomestats/internal/proxy"
-	"github.com/malbanese/adguardhomestats/pkg/client"
+	"github.com/malbanese/adguardhomestats/proxy"
 )
 
 // Default values to be used in arguments
@@ -57,7 +56,7 @@ func main() {
 func startServer(args *ProxyArgs) {
 	httpClient := http.Client{}
 
-	authType := client.BasicAuthType{
+	authType := proxy.BasicAuthType{
 		Username: *args.Username,
 		Password: *args.Password,
 	}
@@ -65,7 +64,7 @@ func startServer(args *ProxyArgs) {
 	url := strings.TrimSuffix(*args.URL, "/")
 
 	server := proxy.Server{
-		Stats: &client.StatsClient{
+		Stats: &proxy.StatsClient{
 			URL:    url + routes.Stats,
 			Auth:   &authType,
 			Client: &httpClient,

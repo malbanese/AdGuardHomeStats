@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/malbanese/adguardhomestats/pkg/client"
 )
 
 // HTTP routes the proxy server will bind to
@@ -16,19 +14,19 @@ type Routes struct {
 
 // Base server definition
 type Server struct {
-	Stats StatsClient
+	Stats StatsSource
 }
 
 // Client to be used for fetching AdGuard Home statistics
-type StatsClient interface {
-	FetchStats(response *client.StatsResponse) error
+type StatsSource interface {
+	FetchStats(response *StatsResponse) error
 }
 
 // Returns an HTTP server which will operate on the given host and port.
 // All relevant proxy routes have been mounted.
-func (p *Server) NewHTTPServer(routes Routes, host string, port uint) *http.Server {
+func (s *Server) NewHTTPServer(routes Routes, host string, port uint) *http.Server {
 	mux := http.NewServeMux()
-	mux.HandleFunc(routes.Stats, p.onStatsRequest)
+	mux.HandleFunc(routes.Stats, s.onStatsRequest)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", host, port),
@@ -38,10 +36,10 @@ func (p *Server) NewHTTPServer(routes Routes, host string, port uint) *http.Serv
 	return server
 }
 
-func (p *Server) onStatsRequest(w http.ResponseWriter, r *http.Request) {
+func (s *Server) onStatsRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Accepting stats request [%s] from [%s]", r.URL, r.RemoteAddr)
-	var response client.StatsResponse
-	err := p.Stats.FetchStats(&response)
+	var response StatsResponse
+	err := s.Stats.FetchStats(&response)
 	writeProxyResponse(w, response, err)
 }
 

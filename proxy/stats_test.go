@@ -1,4 +1,4 @@
-package client
+package proxy_test
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/malbanese/adguardhomestats/proxy"
 )
 
 func createThrowingServer(errorCode int) *httptest.Server {
@@ -15,7 +17,7 @@ func createThrowingServer(errorCode int) *httptest.Server {
 	}))
 }
 
-func createSuccessServer(response *StatsResponse) *httptest.Server {
+func createSuccessServer(response *proxy.StatsResponse) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		jsonBytes, err := json.Marshal(response)
 		if err != nil {
@@ -37,7 +39,7 @@ func createSuccessServerWithString(response string) *httptest.Server {
 func TestFetchStatsSuccess(t *testing.T) {
 	t.Run("Fetch successful response", func(t *testing.T) {
 
-		expected := StatsResponse{
+		expected := proxy.StatsResponse{
 			TimeUnits:           "hours",
 			NumDNSQueries:       1000,
 			NumBlockedFiltering: 2000,
@@ -47,16 +49,16 @@ func TestFetchStatsSuccess(t *testing.T) {
 		server := createSuccessServer(&expected)
 		defer server.Close()
 
-		client := StatsClient{
+		client := proxy.StatsClient{
 			Client: &http.Client{},
 			URL:    server.URL,
-			Auth: &BasicAuthType{
+			Auth: &proxy.BasicAuthType{
 				Username: "user",
 				Password: "password",
 			},
 		}
 
-		var response StatsResponse
+		var response proxy.StatsResponse
 		err := client.FetchStats(&response)
 
 		if err != nil {
@@ -120,16 +122,16 @@ func TestFetchStatsErrors(t *testing.T) {
 			}
 
 			defer tc.server.Close()
-			client := StatsClient{
+			client := proxy.StatsClient{
 				Client: &http.Client{},
 				URL:    tc.url,
-				Auth: &BasicAuthType{
+				Auth: &proxy.BasicAuthType{
 					Username: "user",
 					Password: "password",
 				},
 			}
 
-			var response StatsResponse
+			var response proxy.StatsResponse
 			err := client.FetchStats(&response)
 
 			if err == nil {
