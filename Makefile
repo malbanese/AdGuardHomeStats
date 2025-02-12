@@ -5,17 +5,18 @@ export GO111MODULE=on
 #################
 
 APP=adguardhomestats
-OUT_ROOT="./out"
-BIN_ROOT="${OUT_ROOT}/bin"
-REPORT_ROOT="${OUT_ROOT}/report"
+OUT_ROOT=./out
+BIN_ROOT=${OUT_ROOT}/bin
+REPORT_ROOT=${OUT_ROOT}/report
 SHELL := /bin/bash
 
 #############
 ## Linting ##
 #############
+.PHONY: check-all check-format check-lint check-vet
 
 # Runs all quality checks
-check-all: check-format check-lint check-vet
+check: check-format check-lint check-vet
 
 # Uses the go formatter
 check-format:
@@ -32,6 +33,7 @@ check-vet:
 ############
 ## Chores ##
 ############
+.PHONY: chore-deps
 
 # Chore to update the go dependency files
 chore-deps:
@@ -41,6 +43,7 @@ chore-deps:
 #############
 ## Testing ##
 #############
+.PHONY: test test-coverage
 
 # Run all tests
 test: chore-deps
@@ -55,17 +58,18 @@ test-coverage:
 ##############
 ## Building ##
 ##############
+.PHONY: build-linux build-darwin build-windows build-linux-armv6 clean
+
+build: build-linux build-linux-armv6 build-windows
 
 build-linux:
-	GOOS=linux GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-linux-amd64" ./cmd/proxy/main.go
+	GOOS=linux GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-linux-amd64" ./cmd/main.go
 
-build-darwin:
-	GOOS=darwin GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-darwin-amd64" ./cmd/proxy/main.go
+build-linux-armv6:
+	GOOS=linux GOARCH=arm GOARM=6 go build -o "${BIN_ROOT}/${APP}-linux-armv6" ./cmd/main.go
 
 build-windows:
-	GOOS=windows GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-windows-amd64.exe" ./cmd/proxy/main.go
-
-build-all: build-linux build-darwin build-windows
+	GOOS=windows GOARCH=amd64 go build -o "${BIN_ROOT}/${APP}-amd64.exe" ./cmd/main.go
 
 clean:
 	go clean
@@ -74,7 +78,7 @@ clean:
 #############
 ## General ##
 #############
+.PHONY: all
 
-.PHONY: all check check-format check-lint check-vet chore-deps test coverage build-linux build-darwin build-windows build-all clean
 all: check test build
 
